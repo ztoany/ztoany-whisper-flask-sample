@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <meta http-equiv="x-ua-compatible" content="ie=edge" />
+  <title>Whisper</title>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <!-- Google Fonts Roboto -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <style>
+    .chat-msg-box {
+      display: flex;
+      flex-direction: column;
+      overflow-y: scroll;
+      height: 80vh;
+      scrollbar-width: none;
+    }
+
+    .scroll-hidden::-webkit-scrollbar {
+      display: none;
+    }
+
+    .msg {
+      color: black;
+      padding: 10px;
+      line-height: 26px;
+      font-size: 16px;
+      border-radius: 7px;
+      display: inline-block;
+      position: relative
+    }
+
+    .other-msg {
+      background: #efefef
+    }
+
+    .current-user-msg {
+      background: #5d5cde;
+      color: white;
+    }
+
+    .msg-data-time {
+      color: #6c757d;
+      font-size: small;
+    }
+
+    .current-user-msg-data-time {
+      padding-right: 1rem;
+    }
+
+    .other-msg-data-time {
+      padding-left: 1rem;
+    }
+
+    .msg-input {
+      color: black;
+    }
+
+    .msg-input::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .msg-input::-webkit-scrollbar-thumb {
+      border-radius: 2px;
+      background-color: #c3c3c3;
+    }
+
+    .msg-input::-webkit-scrollbar-track {
+      background-color: transparent;
+    }
+
+    .send-msg-btn {
+      background-color: #5d5cde;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Start your project here-->
+  <main>
+    <!-- chat -->
+    <section>
+      <div class="container-fluid p-0">
+        <div class="row d-flex justify-content-center">
+
+          <div class="col-md-10 col-lg-8 col-xl-6">
+            <div id="chatMsgBox" class="chat-msg-box m-2 scroll-hidden">
+            </div>
+            <div class="d-flex py-3 px-4 border-top justify-content-center align-items-center">
+              <svg id="recorder" xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor"
+                class="bi bi-mic" viewBox="0 0 16 16">
+                <path
+                  d="M3.5 6.5A.5.5 0 0 1 4 7v1a4 4 0 0 0 8 0V7a.5.5 0 0 1 1 0v1a5 5 0 0 1-4.5 4.975V15h3a.5.5 0 0 1 0 1h-7a.5.5 0 0 1 0-1h3v-2.025A5 5 0 0 1 3 8V7a.5.5 0 0 1 .5-.5z" />
+                <path d="M10 8a2 2 0 1 1-4 0V3a2 2 0 1 1 4 0v5zM8 0a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V3a3 3 0 0 0-3-3z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+
+
+  <!-- End your project here-->
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm"
+    crossorigin="anonymous"></script>
+
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"
+    integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+  <!-- Custom scripts -->
+  <script type="text/javascript">
+    let mediaRecorder
+    const constraints = { audio: true };
+    navigator.mediaDevices.getUserMedia(constraints)
+      .then(stream => {
+        mediaRecorder = new MediaRecorder(stream);
+        const audioChunks = [];
+        mediaRecorder.addEventListener("dataavailable",
+          event => {
+            audioChunks.push(event.data);
+          });
+
+        mediaRecorder.addEventListener("stop", () => {
+          const audioBlob = new Blob(audioChunks)
+          audioChunks.length = 0
+          const audioUrl = URL.createObjectURL(audioBlob)
+          buildUserMsgBox(audioUrl)
+          whisper(audioBlob)
+        });
+      })
+
+    $("#recorder").on("mousedown", function () {
+      mediaRecorder.start()
+    })
+
+    $("#recorder").on("mouseup", function () {
+      mediaRecorder.stop()
+    })
+
+    async function whisper(audioBlob) {
+      await fetch('/stt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/octet-stream'
+        },
+        body: audioBlob
+      }).then(resp => {
+        if (resp.ok) {
+          return resp.json()
+        } else {
+          return { text: "" }
+        }
+      }).then(data => {
+        buildBotMsgBox(data)
+      })
+    }
+
+    function buildBotMsgBoxHtml() {
+        return $(`
+            <div class="mb-3">
+                <div class="mb-3 d-flex">
+                    <div><i class="fas fa-robot fa-lg"></i></div>
+                        <span class="msg-data-time other-msg-data-time">
+                        </span>
+                    </div>
+                <div class="msg other-msg text-break">
+                </div>
+            </div>
+        `)
+    }
+
+    function buildUserMsgBoxHtml() {
+        return $(`
+            <div class="mb-3">
+                <div class="mb-3 d-flex" style="flex-direction: row-reverse;">
+                    <div>
+                        <i class="fas fa-user fa-lg"></i>
+                    </div>
+
+                    <span class="msg-data-time current-user-msg-data-time">
+                    </span>
+                </div>
+                <div class="msg current-user-msg float-end">
+                  <audio controls></audio>
+                </div>
+            </div>
+        `)
+    }
+
+    function buildUserMsgBox(audioUrl) {
+        const userMsgBox = buildUserMsgBoxHtml()
+
+        userMsgBox.find("audio").attr('src', audioUrl)
+        userMsgBox.find(".current-user-msg-data-time").text(buildMsgDateTime(new Date()))
+
+        userMsgBox.appendTo("#chatMsgBox")
+    }
+
+
+    function buildBotMsgBox(data) {
+        const botMsgBox = buildBotMsgBoxHtml()
+
+        const botMsgContent = botMsgBox.find(".other-msg")
+        botMsgContent.text(data.text)
+
+        const botMsgTime = botMsgBox.find(".other-msg-data-time")
+        botMsgTime.text(buildMsgDateTime(new Date()))
+
+        botMsgBox.appendTo("#chatMsgBox")
+    }
+
+    function buildMsgDateTime(ts) {
+        let d = new Date(ts)
+        let today = getStartOfToday()
+        if(d < today) {
+            return d.toLocaleString("en-US", {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit"
+            });
+        } else {
+            return d.toLocaleString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit"
+            });
+        }
+    }
+
+    function getStartOfToday() {
+        let now = new Date();
+        now.setHours(0, 0, 0, 0);
+        return now
+    }
+  </script>
+</body>
+
+</html>
