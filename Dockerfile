@@ -13,7 +13,7 @@ RUN pip install -U Flask-Cors
 WORKDIR /app
 COPY docker-entrypoint.sh /app
 RUN chmod +x docker-entrypoint.sh
-COPY templates /app
+COPY templates /app/templates
 COPY *.py /app
 RUN python download_model.py
 ENTRYPOINT ["./docker-entrypoint.sh"]

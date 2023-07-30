@@ -1,3 +1,3 @@
 #!/bin/sh
 
-docker build . -t whisper-flask-app:`date +%Y%m%d%H%M%S`
+docker build . -t whisper-flask-web-sample:`date +%Y%m%d%H%M%S`
