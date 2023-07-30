@@ -24,7 +24,7 @@ def stt():
             temp_file = tempfile.NamedTemporaryFile(delete=False)
             temp_file.write(request.data)
             temp_file.close()
-            model = whisper.load_model(name="tiny", in_memory=True)
+            model = whisper.load_model(name="tiny")
             result = model.transcribe(temp_file.name, language='en')
         finally:
             if temp_file is not None:
