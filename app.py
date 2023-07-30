@@ -24,7 +24,7 @@ def stt():
             temp_file = tempfile.NamedTemporaryFile(delete=False)
             temp_file.write(request.data)
             temp_file.close()
-            model = whisper.load_model(name="tiny")
+            model = whisper.load_model(name="tiny", in_memory=True)
             result = model.transcribe(temp_file.name, language='en')
         finally:
             if temp_file is not None:
@@ -37,4 +37,4 @@ if __name__ == '__main__':
     CORS(app)
     handler = logging.FileHandler('flask.log')
     app.logger.addHandler(handler)
-    app.run()
+    app.run(host='0.0.0.0')
